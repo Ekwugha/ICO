@@ -35,6 +35,8 @@ export default function Home() {
   // tokens that has not yet been claimed by the user
   const [tokensToBeClaimed, setTokensToBeClaimed] = useState(zero);
 
+  const [isOwner, setIsOwner] = useState(false);
+
   // A `Provider` is needed to interact {reading only} with the blockchain
   // A `Signer` is a special type of Provider used in case a `write` transaction needs to be made to the blockchain.
   const getProviderOrSigner = async (needSigner = false) => {
@@ -175,6 +177,46 @@ export default function Home() {
   }
 
 
+  // getOwner: gets the contract owner by connected address
+  const getOwner = async () => {
+    try {
+      const provider = await getProviderOrSigner();
+      const tokenContract = new Contract(TOKEN_CONTRACT_ADDRESS, TOKEN_CONTRACT_ABI, provider);
+
+      // call the owner function from the contract
+      const _owner = await tokenContract.owner();
+
+      // we get signer to extract address of currently connected Metamask account
+      const signer = await getProviderOrSigner(true);
+
+      // Get the address associated to signer which is connected to Metamask
+      const address = await signer.getAddress();
+      if (address.toLowerCase() === _owner.toLowerCase()) {
+        setIsOwner(true);
+      }
+    } catch (err) {
+      console.error(err.message)
+    }
+  }
+
+
+  // withdrawCoins: withdraws ether and tokens by calling the withdraw function in the contract
+  const withdrawCoins = async () => {
+    try {
+      const signer = await getProviderOrSigner(true);
+      const tokenContract = new Contract(TOKEN_CONTRACT_ADDRESS, TOKEN_CONTRACT_ABI,signer);
+
+      const tx = await tokenAmount.Contract.withdraw();
+      setLoading(true);
+      await tx.wait();
+      setLoading(false);
+      await getOwner();
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+
 
   const renderButton = () => {
     // If we are currently waiting for something, return a loading button
@@ -182,6 +224,16 @@ export default function Home() {
       return (
         <div>
           <button className={styles.button}>Loading...</button>
+        </div>
+      );
+    }
+    // if owner is connected, withdrawCoins() is called
+    if (walletConnected && isOwner) {
+      return (
+        <div>
+          <button className={styles.button1} onClick={withdrawCoins}>
+            Withdraw Coins
+          </button>
         </div>
       );
     }
@@ -198,7 +250,6 @@ export default function Home() {
         </div>
       );
     }
-
     // show the mint button if the user does not have any tokens to claim
     return (
     <div style={{ display: "flex-col" }}>
@@ -227,6 +278,7 @@ export default function Home() {
       getTotalTokensMinted();
       getBalanceOfCryptoDevTokens();
       getTokensToBeClaimed();
+      withdrawCoins();
     }
   }, [walletConnected]);
 

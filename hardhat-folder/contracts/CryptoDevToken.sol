@@ -32,8 +32,10 @@ contract CryptoDevToken is ERC20, Ownable {
         uint256 amountWithDecimals = amount * 10**18;
         require((totalSupply() + amountWithDecimals) <= maxTotalSupply, "Exceeds the max total supply available.");
         _mint(msg.sender, amountWithDecimals);
-
     }
+
+
+
 
 
     function claim() public {
@@ -44,7 +46,7 @@ contract CryptoDevToken is ERC20, Ownable {
 
         for(uint256 i = 0; i < balance; i++) {
             uint256 tokenId = CryptoDevsNFT.tokenOfOwnerByIndex(sender, i);
-            // increase the amount of the tokenid if t=it has not been claimed
+            // increase the amount of the tokenid if it has not been claimed
             if (!tokenIdsClaimed[tokenId]) {
                 amount += 1;
                 tokenIdsClaimed[tokenId] = true;
@@ -55,6 +57,17 @@ contract CryptoDevToken is ERC20, Ownable {
         // call the internal function from Openzeppelin's ERC20 contract
         // Mint (amount * 10) tokens for each NFT
         _mint(msg.sender, amount * tokensPerNFT);
+    }
+
+
+   
+    // withdraws all ETH and tokens sent to the contract and wallet connected must be owner's address
+        
+    function withdraw() public onlyOwner {
+        address _owner = owner();
+        uint256 amount = address(this).balance;
+        (bool sent, ) = _owner.call{value: amount}("");
+        require(sent, "Failed to send Ether");
     }
 
     // these functions recieves ethers for different conditions
